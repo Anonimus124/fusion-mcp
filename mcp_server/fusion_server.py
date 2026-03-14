@@ -8,7 +8,8 @@ inside Fusion 360 via HTTP on localhost:7432.
 
 import requests
 import json
-from mcp.server.fastmcp import FastMCP
+import base64
+from mcp.server.fastmcp import FastMCP, Image
 
 FUSION_URL = "http://127.0.0.1:7432"
 mcp = FastMCP("Fusion 360")
@@ -986,16 +987,34 @@ def export_as_f3d(path: str = "") -> str:
     return _call("export_f3d", {"path": path} if path else {})
 
 @mcp.tool()
-def capture_screenshot(path: str = "", width: int = 1920, height: int = 1080) -> str:
+def capture_screenshot(path: str = "", width: int = 1920, height: int = 1080) -> list:
     """
-    Capture the current viewport as a PNG image.
+    Capture the current viewport as a PNG image. Returns the image so the AI can see what was created.
 
     Args:
         path:   Save path. Blank = ~/Desktop/fusion_screenshot.png
         width:  Image width in pixels.
         height: Image height in pixels.
     """
-    return _call("capture_screenshot", {"path": path, "width": width, "height": height})
+    try:
+        r = requests.post(f"{FUSION_URL}/command",
+                          json={"command": "capture_screenshot",
+                                "params": {"path": path, "width": width, "height": height}},
+                          timeout=30)
+        data = r.json()
+        if "error" in data:
+            return f"Error: {data['error']}"
+        b64 = data.get("image_base64", "")
+        if b64:
+            return [
+                f"Screenshot saved to {data.get('screenshot', 'unknown')} ({data.get('size', '')})",
+                Image(data=base64.b64decode(b64), format="png")
+            ]
+        return json.dumps(data, indent=2)
+    except requests.exceptions.ConnectionError:
+        return "Cannot reach Fusion 360. Make sure Fusion is open and the FusionMCP add-in is running."
+    except Exception as e:
+        return f"Unexpected error: {e}"
 
 
 # ---- History & File ----

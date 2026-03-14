@@ -68,7 +68,7 @@ Claude Desktop  ──stdio──▶  MCP Server (Python)  ──HTTP──▶  
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/fusion-mcp.git
+git clone https://github.com/Anonimus124/fusion-mcp.git
 cd fusion-mcp
 ```
 
